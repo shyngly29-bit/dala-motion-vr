@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="kk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DALA MOTION VR — ғылыми жоба</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--dk:#0d3a40;--tl:#14707a;--or:#d9792b;--bg:#f9f6f0;--cd:#f1ebe0;--tx:#1d2428;--mu:#5a6468}
+@page{size:1280px 720px;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#888;font-family:Inter,sans-serif;color:var(--tx)}
+.s{width:1280px;height:720px;background:var(--bg);position:relative;overflow:hidden;padding:56px 64px;page-break-after:always;margin:0 auto 20px}
+@media print{body{background:none}.s{margin:0}}
+.s.dark{background:var(--dk);color:#fff}
+.k{font:700 12px Inter;letter-spacing:.08em;text-transform:uppercase;color:var(--tl);margin-bottom:8px}
+.dark .k{color:var(--or)}
+h1{font:700 84px/1 Lora}
+h2{font:700 38px/1.15 Lora;margin-bottom:28px}
+h3{font:600 21px/1.25 Lora;margin-bottom:8px}
+p,li{font-size:16px;line-height:1.55}
+.mu{color:var(--mu)}
+.bar{width:56px;height:3px;background:var(--or);margin-bottom:22px}
+.n{position:absolute;right:40px;bottom:26px;font:600 13px Inter;color:var(--mu)}
+.dark .n{color:#8fb3b7}
+.g{display:grid;gap:18px}
+.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:repeat(3,1fr)}.c4{grid-template-columns:repeat(4,1fr)}
+.cd{background:var(--cd);border-radius:12px;padding:20px 22px}
+.cd.t{background:#e0efed}
+.cd.w{background:#fff;border:1px solid #e7e0d3}
+.f{font:500 20px/1.5 Lora;color:var(--dk);background:#fff;border-left:4px solid var(--or);padding:10px 16px;border-radius:6px;margin:8px 0}
+.f small{font:400 13px Inter;color:var(--mu);margin-left:10px}
+.calc{font-size:15px;line-height:1.7}
+.calc b{color:var(--tl)}
+img.ph{width:100%;height:100%;object-fit:cover;border-radius:10px;display:block}
+ul{padding-left:20px}li{margin-bottom:6px}
+ol{padding-left:22px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{border-bottom:1px solid #ddd3c2;padding:10px 12px;text-align:left}
+th{font-weight:600;color:var(--tl);font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+.fill{color:var(--or);font-weight:600}
+.tag{display:inline-block;font:600 12px Inter;color:#fff;background:var(--tl);border-radius:20px;padding:3px 10px;margin-bottom:10px}
+.tag.o{background:var(--or)}
+@media screen{
+html,body{height:100%;overflow:hidden;background:#071f23}
+.s{position:absolute;left:50%;top:50%;margin:0;transform-origin:center;opacity:0;pointer-events:none;transition:opacity .45s ease;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.s.on{opacity:1;pointer-events:auto}
+#ui{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px;z-index:9;font:600 14px Inter;color:#cfe0e2}
+#ui button{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:50%;width:42px;height:42px;font-size:18px;cursor:pointer}
+#ui button:hover{background:var(--or)}
+#prog{position:fixed;left:0;top:0;height:3px;background:var(--or);transition:width .4s;z-index:9}
+}
+#rot{display:none;position:fixed;top:14px;left:0;right:0;text-align:center;font:500 14px Inter;color:#cfe0e2}
+@media screen and (orientation:portrait) and (max-width:700px){#rot{display:block}}
+@media print{#ui,#prog,#rot{display:none}}
+</style></head><body>
+<div id="prog"></div><div id="rot">↻ Телефонды көлденең ұстаңыз</div>
+<div id="ui"><button id="pv" aria-label="Алдыңғы">‹</button><span id="cnt"></span><button id="nx" aria-label="Келесі">›</button><button id="fs" aria-label="Толық экран" style="font-size:15px">⛶</button></div>
+
+<!-- 1 -->
+<section class="s dark" style="display:flex;flex-direction:column;justify-content:center;padding-left:96px">
+<div class="bar"></div><div class="k">Ғылыми жоба • Физика және ақпараттық технологиялар</div>
+<h1>DALA MOTION VR</h1>
+<p style="font-size:22px;max-width:760px;margin-top:22px;color:#cfe0e2">Қазақтың дәстүрлі ойындарын VR арқылы жаңғыртып, олардың физикалық заңдылықтарын зерттеу</p>
+<p style="margin-top:56px;color:#8fb3b7">Орындаған: Байділда Муниса</p>
+</section>
+
+<!-- 2 -->
+<section class="s"><div class="k">Кіріспе</div><h2>Зерттеудің өзектілігі</h2>
+<div class="g c3">
+<div class="cd"><span class="tag o">Мәселе 1</span><h3>Физика — абстрактілі пән</h3><p class="mu">Оқушылар формуланы жаттайды, бірақ оны күнделікті өмірдегі қозғалыспен байланыстыра алмайды.</p></div>
+<div class="cd"><span class="tag o">Мәселе 2</span><h3>Ұлттық ойындар ұмытылуда</h3><p class="mu">Асық, садақ, арқан тарту қала балаларының өмірінен шығып барады, олардың ғылыми мазмұны ашылмаған.</p></div>
+<div class="cd"><span class="tag o">Мәселе 3</span><h3>Зертхана мүмкіндігі шектеулі</h3><p class="mu">Биіктен құлау, жебе баллистикасы сияқты тәжірибелерді сыныпта қауіпсіз жүргізу мүмкін емес.</p></div>
+</div>
+<div class="cd t" style="margin-top:22px"><h3>Шешім</h3><p>Виртуалды шындық (VR) ұлттық ойынды қауіпсіз ортада қайта жасап, әр әрекеттің физикалық шамаларын (жылдамдық, күш, энергия) нақты уақытта көрсетуге мүмкіндік береді.</p></div>
+<div class="n">02</div></section>
+
+<!-- 3 -->
+<section class="s"><div class="k">Зерттеу жоспары</div><h2>Мақсаты, міндеттері және болжамы</h2>
+<div class="g c2">
+<div><div class="cd" style="margin-bottom:16px"><h3>Мақсаты</h3><p>Қазақ ұлттық ойындарының физикалық заңдылықтарын зерттеп, оларды VR-ортада көрнекі түрде модельдейтін білім беру ойынын жасау.</p></div>
+<div class="cd t"><h3>Болжам (гипотеза)</h3><p>Егер физика заңдары ұлттық ойын арқылы VR-ортада көрсетілсе, онда оқушылардың тақырыпты түсінуі мен пәнге қызығушылығы дәстүрлі сабаққа қарағанда жоғары болады.</p></div></div>
+<div class="cd"><h3>Міндеттері</h3><ol>
+<li>Асық ату, садақ ату, арқан тарту ойындарының механикасын талдау.</li>
+<li>Әр ойынға қатысты физикалық шамаларды есептеу (импульс, энергия, үйкеліс, баллистика).</li>
+<li>VR-ойынның сценарийі мен режимдерін әзірлеу.</li>
+<li>Физикалық есептеулерді ойын модульіне енгізу.</li>
+<li>Оқушылармен тәжірибе жүргізіп, тиімділігін бағалау.</li></ol></div>
+</div><div class="n">03</div></section>
+
+<!-- 4 -->
+<section class="s"><div class="k">Әдістеме</div><h2>Зерттеу нысаны, пәні және әдістері</h2>
+<div class="g c2" style="margin-bottom:18px">
+<div class="cd"><h3>Зерттеу нысаны</h3><p class="mu">Қазақтың дәстүрлі ұлттық ойындары және оларды оқытуда VR технологиясын қолдану.</p></div>
+<div class="cd"><h3>Зерттеу пәні</h3><p class="mu">Ойын кезіндегі денелердің қозғалысы мен өзара әрекеттесуінің физикалық заңдылықтары.</p></div></div>
+<div class="g c4">
+<div class="cd w"><span class="tag">01</span><h3>Теориялық талдау</h3><p class="mu">Оқулықтар мен ғылыми мақалаларды зерттеу</p></div>
+<div class="cd w"><span class="tag">02</span><h3>Математикалық модельдеу</h3><p class="mu">Кинематика және динамика формулалары бойынша есептеу</p></div>
+<div class="cd w"><span class="tag">03</span><h3>Компьютерлік модельдеу</h3><p class="mu">Ойын қозғалтқышындағы физикалық симуляция</p></div>
+<div class="cd w"><span class="tag">04</span><h3>Педагогикалық эксперимент</h3><p class="mu">Бақылау және тәжірибелік топ, сауалнама, тест</p></div>
+</div><div class="n">04</div></section>
+
+<!-- 5 -->
+<section class="s"><div class="k">Ұлттық мұра + технология</div><h2>Жобаның негізгі идеясы</h2>
+<div style="display:grid;grid-template-columns:1.25fr 1fr;gap:44px;align-items:center;height:480px">
+<img class="ph" src="img/s2_1.jpeg" style="height:440px">
+<div><div class="bar"></div><h3 style="font-size:28px;color:var(--tl)">Виртуалды қазақ даласына саяхат</h3>
+<p class="mu" style="font-size:18px">Ойыншы кең дала ортасына еніп, ұлттық ойындарды ойнайды. Әр лақтыру, әр тарту кезінде экранда жылдамдық, күш және энергия мәндері пайда болады — ойын физика зертханасына айналады.</p></div>
+</div><div class="n">05</div></section>
+
+<!-- 6 -->
+<section class="s"><div class="k">Интерактивті платформа</div><h2>Виртуалды даладағы ұлттық ойындар</h2>
+<div class="g c4">
+<div class="cd" style="padding:14px"><img class="ph" src="img/s3_0.jpeg" style="height:170px;margin-bottom:12px"><h3>Асық ату</h3><p class="mu">Импульс, соқтығысу, үйкеліс</p></div>
+<div class="cd" style="padding:14px"><img class="ph" src="img/s3_1.jpeg" style="height:170px;margin-bottom:12px"><h3>Садақ ату</h3><p class="mu">Гук заңы, энергия, баллистика</p></div>
+<div class="cd" style="padding:14px"><img class="ph" src="img/s3_3.jpeg" style="height:170px;margin-bottom:12px"><h3>Арқан тарту</h3><p class="mu">Ньютон заңдары, тыныштық үйкелісі</p></div>
+<div class="cd" style="padding:14px"><img class="ph" src="img/s3_2.jpeg" style="height:170px;margin-bottom:12px"><h3>Тоғызқұмалақ</h3><p class="mu">Логика және математика (бонус-режим)</p></div>
+</div>
+<p class="mu" style="margin-top:20px;font-size:14px">Тоғызқұмалақ физикалық емес, логикалық ойын — ол жобада математикалық ойлауды дамытатын қосымша режим ретінде берілген.</p>
+<div class="n">06</div></section>
+
+<!-- 7 -->
+<section class="s"><div class="k">Механика заңдары</div><h2>Асық ату кезіндегі физика</h2>
+<div class="g c2">
+<div>
+<div class="f">p = m·v <small>импульс</small></div>
+<div class="f">m₁v₁ = m₁v₁′ + m₂v₂′ <small>импульстің сақталу заңы</small></div>
+<div class="f">F<sub>үйк</sub> = μ·m·g <small>сырғанау үйкелісі</small></div>
+<div class="f">s = v² / (2μg) <small>тоқтағанға дейінгі жол</small></div>
+</div>
+<div class="cd"><h3>Есептеу мысалы</h3><div class="calc">
+Сақа массасы <b>m = 0,04 кг</b>, лақтыру жылдамдығы <b>v = 3 м/с</b>, жердегі үйкеліс коэффициенті <b>μ = 0,4</b>.<br><br>
+Импульс: p = 0,04 · 3 = <b>0,12 кг·м/с</b><br>
+Тежелу жолы: s = 3² / (2 · 0,4 · 9,8) ≈ <b>1,15 м</b><br><br>
+Тең массалы асықпен серпімді соқтығысқанда сақа тоқтап, асық <b>3 м/с</b> жылдамдықпен ұшып кетеді — VR-да мұны баяулатып көрсетуге болады.</div></div>
+</div><div class="n">07</div></section>
+
+<!-- 8 -->
+<section class="s"><div class="k">Баллистика және энергия</div><h2>Садақ ату кезіндегі физика</h2>
+<div class="g c2">
+<div>
+<div class="f">F = k·x <small>Гук заңы</small></div>
+<div class="f">E<sub>п</sub> = k·x² / 2 <small>серпімділік энергиясы</small></div>
+<div class="f">v = √(2ηE<sub>п</sub> / m) <small>жебенің бастапқы жылдамдығы</small></div>
+<div class="f">L = v²·sin2α / g <small>ұшу қашықтығы (ауасыз)</small></div>
+<svg viewBox="0 0 560 120" style="width:100%;margin-top:8px"><line x1="20" y1="100" x2="540" y2="100" stroke="#ccc"/><path d="M30 100 Q280 -40 530 100" fill="none" stroke="#d9792b" stroke-width="3" stroke-dasharray="8 6"/><circle cx="30" cy="100" r="6" fill="#14707a"/><circle cx="280" cy="30" r="6" fill="#d9792b"/><circle cx="530" cy="100" r="6" fill="#1d2428"/><text x="30" y="118" font-size="12" fill="#14707a" font-family="Inter">α = 45°</text><text x="250" y="20" font-size="12" fill="#d9792b" font-family="Inter">h max</text><text x="490" y="118" font-size="12" font-family="Inter">L</text></svg>
+</div>
+<div class="cd"><h3>Есептеу мысалы</h3><div class="calc">
+Адырнаны <b>x = 0,5 м</b> тартқанда күш <b>F = 150 Н</b> → k = 300 Н/м.<br>
+Энергия: E = 300 · 0,5² / 2 = <b>37,5 Дж</b><br>
+ПӘК η = 0,75, жебе массасы <b>m = 0,03 кг</b>:<br>
+v = √(2 · 0,75 · 37,5 / 0,03) ≈ <b>43 м/с</b><br>
+α = 45° кезінде L = 43² / 9,8 ≈ <b>190 м</b><br><br>
+<span class="mu">Нақты қашықтық ауа кедергісінен аз болады — VR-да екі траекторияны қатар салыстыруға болады.</span></div></div>
+</div><div class="n">08</div></section>
+
+<!-- 9 -->
+<section class="s"><div class="k">Динамика</div><h2>Арқан тарту кезіндегі физика</h2>
+<div class="g c2">
+<div>
+<div class="f">F₁₂ = −F₂₁ <small>Ньютонның III заңы</small></div>
+<div class="f">F<sub>max</sub> = μ<sub>0</sub>·m·g <small>тыныштық үйкелісінің шегі</small></div>
+<div class="f">a = (F₁ − F₂) / (m₁ + m₂) <small>жүйенің үдеуі</small></div>
+<p style="margin-top:14px">Арқанның екі ұшындағы керілу күші бірдей. Сондықтан командалардың «күші» емес, <b>аяқ пен жер арасындағы үйкеліс күші</b> жеңісті анықтайды.</p>
+</div>
+<div class="cd"><h3>Есептеу мысалы</h3><div class="calc">
+A командасы: 5 адам × 60 кг = <b>300 кг</b>, μ₀ = 0,6<br>
+B командасы: 5 адам × 55 кг = <b>275 кг</b>, μ₀ = 0,6<br><br>
+F<sub>A</sub> = 0,6 · 300 · 9,8 ≈ <b>1764 Н</b><br>
+F<sub>B</sub> = 0,6 · 275 · 9,8 ≈ <b>1617 Н</b><br>
+a = (1764 − 1617) / 575 ≈ <b>0,26 м/с²</b><br><br>
+<span class="mu">Қорытынды: ауыр әрі аяқ киімі жерге жақсы ілінетін команда жеңеді. Денені артқа еңкейту де үйкелісті арттырады.</span></div></div>
+</div><div class="n">09</div></section>
+
+<!-- 10 -->
+<section class="s"><div class="k">Ерекше VR режим 01</div><h2>Бәйтерек биігінен секіру</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px">
+<div>
+<p class="mu" style="margin-bottom:12px">Ойыншы сақтандыру арқанымен байланып, Бәйтерек мұнарасының бақылау алаңынан (H = 97 м) секіреді.</p>
+<div class="f">t = √(2H/g) <small>түсу уақыты</small></div>
+<div class="f">v = √(2gH) <small>соңғы жылдамдық</small></div>
+<div class="cd" style="margin-top:12px"><div class="calc">
+t = √(2·97 / 9,8) ≈ <b>4,45 с</b><br>
+v = √(2·9,8·97) ≈ <b>43,6 м/с ≈ 157 км/сағ</b><br>
+<span class="mu">Ауа кедергісімен нақты жылдамдық аз болады. VR-да «ауасыз / ауамен» режимін ауыстырып, айырмашылықты көруге болады.</span></div></div>
+</div>
+<img class="ph" src="img/s4_1.jpeg" style="height:530px">
+</div><div class="n">10</div></section>
+
+<!-- 11 -->
+<section class="s"><div class="k">Ерекше VR режим 02</div><h2>Шарын шатқалы үстінен ұшу</h2>
+<div style="display:grid;grid-template-columns:1.15fr 1fr;gap:40px;align-items:center">
+<img class="ph" src="img/s5_1.jpeg" style="height:480px">
+<div><h3 style="color:var(--tl);font-size:24px">Қанат-костюммен әуе саяхаты</h3>
+<p class="mu" style="margin-bottom:12px">Ойыншы еліміздің көрікті жерлері үстінен қалықтап ұшып, аэродинамика заңдарын бақылайды.</p>
+<div class="f">F<sub>көт</sub> = ½·ρ·v²·S·C<sub>L</sub> <small>көтеру күші</small></div>
+<div class="f">F<sub>кед</sub> = ½·ρ·v²·S·C<sub>D</sub> <small>ауа кедергісі</small></div>
+<p style="margin-top:12px">Қол мен аяқтың бұрышын өзгерткенде S және C<sub>L</sub> өзгереді — ойыншы ұшу бағыты мен түсу жылдамдығын өзі басқарады.</p></div>
+</div><div class="n">11</div></section>
+
+<!-- 12 -->
+<section class="s"><div class="k">Техникалық шешім</div><h2>Жобаның құрылымы</h2>
+<div class="g c4" style="margin-bottom:22px">
+<div class="cd w"><span class="tag">1</span><h3>VR-орта</h3><p class="mu">Дала, Бәйтерек, Шарын 3D-сахналары</p></div>
+<div class="cd w"><span class="tag">2</span><h3>Физика модулі</h3><p class="mu">Формулалар бойынша қозғалысты есептеу</p></div>
+<div class="cd w"><span class="tag">3</span><h3>HUD-панель</h3><p class="mu">v, F, E, h мәндерін нақты уақытта көрсету</p></div>
+<div class="cd w"><span class="tag">4</span><h3>Талдау</h3><p class="mu">Траектория графигі, нәтижелерді сақтау</p></div>
+</div>
+<div class="g c2">
+<div class="cd"><h3>Құрылғылар</h3><p class="mu">VR-шлем (мысалы, Meta Quest) немесе смартфон + VR-көзілдірік. Шлем жоқ болса — компьютерде 3D-режим.</p></div>
+<div class="cd"><h3>Ойын барысы</h3><p class="mu">Режимді таңдау → әрекет жасау → физикалық шамаларды бақылау → бақылау сұрақтарына жауап беру → нәтиже.</p></div>
+</div><div class="n">12</div></section>
+
+<!-- 13 -->
+<section class="s"><div class="k">Білім беру трансформациясы</div><h2>Оқыту тәсілінің өзгеруі</h2>
+<div class="g c2" style="margin-top:40px">
+<div class="cd" style="padding:30px"><div class="k" style="color:var(--mu)">Дәстүрлі тәсіл</div><h3 style="font-size:26px">Құрғақ теория мен формула</h3>
+<p><b>Оқулық:</b> тек мәтін мен сызбалар</p><p><b>Қабылдау:</b> абстрактілі түсінік</p><p><b>Белсенділік:</b> пассивті тыңдау</p></div>
+<div class="cd t" style="padding:30px"><div class="k">DALA MOTION VR</div><h3 style="font-size:26px">Тәжірибе арқылы түсіну</h3>
+<p><b>Интерактив:</b> өз қолымен сынап көру</p><p><b>Визуализация:</b> күш пен траекторияны көру</p><p><b>Нәтиже:</b> терең әрі саналы білім</p></div>
+</div><div class="n">13</div></section>
+
+<!-- 14 -->
+<section class="s"><div class="k">Тәжірибелік бөлім</div><h2>Педагогикалық эксперимент</h2>
+<div class="g" style="grid-template-columns:1fr 1.3fr">
+<div class="cd"><h3>Эксперимент барысы</h3><ol>
+<li>Екі топ: бақылау (дәстүрлі сабақ) және тәжірибелік (VR-сабақ).</li>
+<li>Сабаққа дейін бірдей тест (алдын ала деңгей).</li>
+<li>«Импульс», «Энергия», «Үйкеліс» тақырыптары бойынша сабақ.</li>
+<li>Сабақтан кейін қайта тест және қызығушылық сауалнамасы.</li></ol></div>
+<div class="cd w"><table>
+<tr><th>Көрсеткіш</th><th>Бақылау тобы</th><th>Тәжірибелік топ</th></tr>
+<tr><td>Оқушы саны</td><td class="fill">[ ]</td><td class="fill">[ ]</td></tr>
+<tr><td>Тест (дейін), %</td><td class="fill">[ ]</td><td class="fill">[ ]</td></tr>
+<tr><td>Тест (кейін), %</td><td class="fill">[ ]</td><td class="fill">[ ]</td></tr>
+<tr><td>Қызығушылық, 5 балдық шкала</td><td class="fill">[ ]</td><td class="fill">[ ]</td></tr>
+</table><p class="mu" style="font-size:13px;margin-top:12px">Кесте нақты эксперимент нәтижелерімен толтырылады.</p></div>
+</div><div class="n">14</div></section>
+
+<!-- 15 -->
+<section class="s"><div class="k">Салыстыру</div><h2>Шетелдік аналогтар және жобаның бірегейлігі</h2>
+<div class="g c3" style="margin-bottom:22px">
+<div class="cd"><h3>PhET (АҚШ)</h3><p class="mu">Колорадо университетінің физикалық симуляциялары. 2D, VR жоқ, ұлттық мазмұн жоқ.</p></div>
+<div class="cd"><h3>Labster (Дания)</h3><p class="mu">Виртуалды зертханалар. Ақылы, ағылшын тілінде, ойын элементі аз.</p></div>
+<div class="cd"><h3>Google Expeditions</h3><p class="mu">VR-саяхаттар. Тек көру, физикалық есептеу мен интерактив жоқ.</p></div>
+</div>
+<div class="cd t" style="padding:26px"><h3 style="font-size:24px">DALA MOTION VR бірегейлігі</h3>
+<p>Ұлттық ойын + физика есептеулері + VR — үшеуін бір платформада біріктіреді. Мазмұн қазақ тілінде, Бәйтерек пен Шарын сияқты елімізге таныс орындарда өтеді.</p></div>
+<div class="n">15</div></section>
+
+<!-- 16 -->
+<section class="s"><div class="k">Құндылық пен нәтиже</div><h2>Жобаның маңыздылығы</h2>
+<div class="g c3" style="margin-top:40px">
+<div class="cd" style="padding:30px"><h3 style="font-size:24px">Ұлттық құндылық</h3><p class="mu">Дәстүрлі ойындарды жастарға заманауи форматта таныстыру.</p></div>
+<div class="cd" style="padding:30px"><h3 style="font-size:24px">Физикаға қызығушылық</h3><p class="mu">Күрделі заңдылықтарды ойын тәжірибесімен меңгерту.</p></div>
+<div class="cd" style="padding:30px"><h3 style="font-size:24px">Цифрлық білім беру</h3><p class="mu">VR технологиясын оқу үдерісіне тиімді енгізу.</p></div>
+</div><div class="n">16</div></section>
+
+<!-- 17 -->
+<section class="s"><div class="k">Қорытынды</div><h2>Зерттеу қорытындысы</h2>
+<div class="g c2">
+<div class="cd"><ol>
+<li>Асық ату, садақ ату, арқан тарту ойындарында импульс, энергия, үйкеліс және баллистика заңдары айқын көрінетіні дәлелденді.</li>
+<li>Әр ойын үшін физикалық шамалардың есептеу үлгілері жасалды.</li>
+<li>VR-ойынның екі ерекше режимі (Бәйтерек, Шарын) әзірленді.</li>
+<li>Педагогикалық эксперимент нәтижесі болжамды <span class="fill">[растады / ішінара растады]</span>.</li></ol></div>
+<div class="cd t"><h3>Даму перспективасы</h3><ul>
+<li>Жаңа ойындар қосу: көкпар, аударыспақ, алтыбақан.</li>
+<li>Мұғалімге арналған нәтижелер панелі.</li>
+<li>Үш тілдегі нұсқа: қазақ, орыс, ағылшын.</li>
+<li>Мектептерге тегін веб-нұсқа (WebXR).</li></ul></div>
+</div><div class="n">17</div></section>
+
+<!-- 18 -->
+<section class="s"><div class="k">Дереккөздер</div><h2>Пайдаланылған әдебиеттер</h2>
+<ol style="font-size:15px;line-height:1.7;max-width:1100px">
+<li>Кронгарт Б.А., Қазақбаева Д.М. Физика. 9-сынып. — Алматы: Мектеп, 2019.</li>
+<li>Мякишев Г.Я., Буховцев Б.Б., Сотский Н.Н. Физика. 10 класс. — М.: Просвещение.</li>
+<li>Halliday D., Resnick R., Walker J. Fundamentals of Physics. — Wiley.</li>
+<li>Тотенаев Б.Т. Қазақтың ұлттық ойындары. — Алматы: Қазақстан, 1994.</li>
+<li>Radianti J. et al. A systematic review of immersive virtual reality applications for higher education // Computers &amp; Education. — 2020. — Vol. 147. — 103778.</li>
+<li>Makransky G., Lilleholt L. A structural equation modeling investigation of the emotional value of immersive virtual reality in education // ETR&amp;D. — 2018. — Vol. 66. — P. 1141–1164.</li>
+<li>PhET Interactive Simulations. University of Colorado Boulder. — phet.colorado.edu</li>
+</ol><div class="n">18</div></section>
+
+<!-- 19 -->
+<section class="s dark" style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
+<div class="k">Жобаның негізгі ұстанымы</div>
+<p style="font:italic 500 38px/1.4 Lora;max-width:1000px">«Ұлттық мұраны сақтаймыз, технологиямен жаңартамыз, физикамен түсіндіреміз!»</p>
+<div class="bar" style="margin:30px auto"></div>
+<h2 style="margin:0">Назарларыңызға рақмет!</h2>
+<p style="color:#8fb3b7;margin-top:10px">Байділда Муниса • DALA MOTION VR</p>
+</section>
+<script>
+const S=[...document.querySelectorAll('.s')];let i=0;
+function fit(){const k=Math.min(innerWidth/1280,(innerHeight-60)/720);S.forEach(s=>s.style.transform=`translate(-50%,calc(-50% - 22px)) scale(${k})`)}
+function go(n){i=Math.max(0,Math.min(S.length-1,n));S.forEach((s,j)=>s.classList.toggle('on',j===i));cnt.textContent=(i+1)+' / '+S.length;prog.style.width=((i+1)/S.length*100)+'%';history.replaceState(null,'','#'+(i+1))}
+addEventListener('resize',fit);
+addEventListener('keydown',e=>{if(['ArrowRight','PageDown',' ','Enter'].includes(e.key))go(i+1);if(['ArrowLeft','PageUp','Backspace'].includes(e.key))go(i-1);if(e.key==='Home')go(0);if(e.key==='End')go(S.length-1)});
+nx.onclick=()=>go(i+1);pv.onclick=()=>go(i-1);
+fs.onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
+let x0=null;addEventListener('touchstart',e=>x0=e.touches[0].clientX,{passive:true});
+addEventListener('touchend',e=>{if(x0===null)return;const d=e.changedTouches[0].clientX-x0;if(Math.abs(d)>40)go(i+(d<0?1:-1));x0=null});
+addEventListener('hashchange',()=>{const n=parseInt(location.hash.slice(1))-1;if(n!==i&&n>=0)go(n)});
+fit();go((parseInt(location.hash.slice(1))||1)-1);
+</script>
+</body></html>
