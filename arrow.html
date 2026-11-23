@@ -293,6 +293,50 @@ function buildBow(d){const c=.12+.2*d/XMAX,pts=[];for(let i=0;i<=40;i++){const s
  const sh=new THREE.Vector3(-.12,0,.03),el=new THREE.Vector3(lerp(.18,-.38,d/XMAX),lerp(-.16,.05,d/XMAX),lerp(.16,.04,d/XMAX));
  armR1=limb(sh,el,.045,sleeve);armR2=limb(el,handR.position,.04,sleeve);rig.add(armL,armR1,armR2);return nock}
 
+/* ---------- rigged GLB-персонаж вместо примитивной фигуры (скилл cinematic-3d-character) ----------
+   Временная модель: assets/Soldier.glb (three.js examples, MIT; персонаж Mixamo). Заменить на казахского лучника — тот же код. */
+const GLB={ready:false,bones:{},mixer:null};
+{const B=n=>GLB.bones[n];
+ const qA=new THREE.Quaternion(),qB=new THREE.Quaternion(),qP=new THREE.Quaternion(),vA=new THREE.Vector3(),vB=new THREE.Vector3(),vC=new THREE.Vector3(),vT=new THREE.Vector3(),vP=new THREE.Vector3(),vD=new THREE.Vector3(),vU=new THREE.Vector3();
+ // поворот кости в мировых координатах на дельту q
+ function rotWorld(bone,q){bone.getWorldQuaternion(qA);qA.premultiply(q);bone.parent.getWorldQuaternion(qP);bone.quaternion.copy(qP.invert().multiply(qA));bone.updateWorldMatrix(false,true)}
+ // аналитический IK на две кости: upper→lower→end тянется к target, локоть — в сторону pole
+ function ik2(up,lo,end,target,pole){
+  up.getWorldPosition(vA);lo.getWorldPosition(vB);end.getWorldPosition(vC);
+  const a=vA.distanceTo(vB),b=vB.distanceTo(vC);vD.subVectors(target,vA);const d=Math.min(Math.max(vD.length(),Math.abs(a-b)+1e-3),a+b-1e-3);vD.normalize();
+  vU.subVectors(pole,vA);vU.addScaledVector(vD,-vU.dot(vD)).normalize();
+  const ca=(a*a+d*d-b*b)/(2*a*d),sa=Math.sqrt(Math.max(0,1-ca*ca));
+  vT.copy(vA).addScaledVector(vD,a*ca).addScaledVector(vU,a*sa);          // новое положение локтя
+  rotWorld(up,qB.setFromUnitVectors(vB.sub(vA).normalize(),vP.subVectors(vT,vA).normalize()));
+  lo.getWorldPosition(vB);end.getWorldPosition(vC);
+  rotWorld(lo,qB.setFromUnitVectors(vC.sub(vB).normalize(),vP.subVectors(target,vB).normalize()))}
+ const yaw=(bone,a)=>rotWorld(bone,qB.setFromAxisAngle(new THREE.Vector3(0,1,0),a));
+ function curl(side,amt){['Index','Middle','Ring','Pinky'].forEach(f=>[1,2,3].forEach(i=>{const b=B(`mixamorig${side}Hand${f}${i}`);if(b)b.rotation.z+=(side==='Left'?amt:-amt)}))}
+ const tGrip=new THREE.Vector3(),tNock=new THREE.Vector3(),pL=new THREE.Vector3(),pR=new THREE.Vector3();
+ GLB.update=function(){
+  GLB.mixer.update(0);                                   // базовая поза (Idle, кадр задан детерминированно)
+  const S=GLB.root;S.updateMatrixWorld(true);
+  yaw(B('mixamorigSpine1'),.25);yaw(B('mixamorigNeck'),.45);yaw(B('mixamorigHead'),.55);   // голова к цели (+X)
+  tGrip.set(.6,0,.0).applyMatrix4(rig.matrixWorld);tNock.copy(handR.position).applyMatrix4(rig.matrixWorld);
+  pL.set(.35,1.2,-.4);pR.set(-.55,1.75,-.15);
+  ik2(B('mixamorigLeftArm'),B('mixamorigLeftForeArm'),B('mixamorigLeftHand'),tGrip,pL);
+  ik2(B('mixamorigRightArm'),B('mixamorigRightForeArm'),B('mixamorigRightHand'),tNock,pR);
+  curl('Left',.95);curl('Right',.7);
+  [armL,armR1,armR2,handL,handR].forEach(m=>m&&(m.visible=false))};
+ import('three/addons/loaders/GLTFLoader.js').then(({GLTFLoader})=>new GLTFLoader().loadAsync('assets/Soldier.glb')).then(g=>{
+  const root=g.scene;root.traverse(o=>{if(o.isBone)GLB.bones[o.name]=o;if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(/visor/i.test(o.name))o.visible=false;
+   if(o.material){o.material.envMapIntensity=.8;o.material.layers}}});
+  root.updateMatrixWorld(true);const top=new THREE.Vector3(),ft=new THREE.Vector3();GLB.bones.mixamorigHead.getWorldPosition(top);GLB.bones.mixamorigLeftToeBase.getWorldPosition(ft);const s=1.50/(top.y-ft.y);root.scale.multiplyScalar(s);root.updateMatrixWorld(true);GLB.bones.mixamorigLeftToeBase.getWorldPosition(ft);root.position.y-=ft.y-.04;
+  // повернуть так, чтобы левое плечо смотрело на цель (+X), грудь — к камере (+Z)
+  root.updateMatrixWorld(true);const l=new THREE.Vector3(),r=new THREE.Vector3();GLB.bones.mixamorigLeftArm.getWorldPosition(l);GLB.bones.mixamorigRightArm.getWorldPosition(r);
+  const dir=l.sub(r);root.rotation.y=Math.atan2(dir.z,dir.x);root.updateMatrixWorld(true);
+  GLB.root=root;GLB.mixer=new THREE.AnimationMixer(root);const idle=GLB.mixer.clipAction(THREE.AnimationClip.findByName(g.animations,'Idle'));idle.play();idle.time=.4;
+  archer.children.forEach(c=>{if(c!==rig)c.visible=false});archer.add(root);
+  // контровой холодный свет, чтобы отделить силуэт от заката
+  const rim=new THREE.DirectionalLight(0x9fc8ff,1.4);rim.position.set(-3,3,-4);rim.target=root;archer.add(rim);
+  GLB.ready=true}).catch(e=>console.warn('GLB not loaded, placeholder kept',e));
+}
+
 /* стрела */
 const arrow=new THREE.Group();arrow.rotation.order='ZYX';scene.add(arrow);
 /* общие uniforms цифровизации (всё управляется scroll progress → детерминировано и обратимо) */
@@ -457,6 +501,7 @@ function frame(p){
  const ang=TH*ss(.2,.33,p);rig.rotation.z=ang;
  if(Math.abs(d-lastD)>1e-4){buildBow(d);lastD=d}
  rig.updateWorldMatrix(true,false);
+ if(GLB.ready)GLB.update();
  C0.copy(C0b);
  const t=tmap(p);
  let aPos=tmp,dirA;
