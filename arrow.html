@@ -59,7 +59,7 @@ body{font-family:Inter,sans-serif;color:#fff;background:#05161a}
  #next h2{font-size:30px}
 }
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 </head><body>
@@ -91,7 +91,7 @@ body{font-family:Inter,sans-serif;color:#fff;background:#05161a}
   <canvas id="graph" width="560" height="200"></canvas>
  </div>
 
- <div class="glass" id="hud3"><div class="lbl">Келесі зерттеу бөлімі</div><div style="font:500 16px Inter;line-height:1.5">Жебе жарқыраған порталды тесіп өтеді — аэродинамика бөліміне ауысу</div></div>
+ <div class="glass" id="hud3"><div class="lbl">Келесі зерттеу бөлімі</div><div style="font:500 16px Inter;line-height:1.5">Жебе цифрлық бөлшектерге айналып, порталдан өтеді — келесі зерттеу бөліміне ауысу</div></div>
 
 
  <div class="ov" id="endbg"></div><div class="ov" id="flash"></div>
@@ -126,6 +126,11 @@ body{font-family:Inter,sans-serif;color:#fff;background:#05161a}
 
 <script type="module">
 import * as THREE from 'three';
+import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
+import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
+let bloom=null,composer=null;
 const $=id=>document.getElementById(id);
 const q=new URLSearchParams(location.search);
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches && !q.has('motion');
@@ -287,14 +292,78 @@ function buildBow(d){const c=.12+.2*d/XMAX,pts=[];for(let i=0;i<=40;i++){const s
 
 /* стрела */
 const arrow=new THREE.Group();arrow.rotation.order='ZYX';scene.add(arrow);
-const aMats=[new THREE.MeshStandardMaterial({color:0xcaa36a,roughness:.6}),new THREE.MeshStandardMaterial({color:0x9aa3a8,metalness:.8,roughness:.3}),
+/* общие uniforms цифровизации (всё управляется scroll progress → детерминировано и обратимо) */
+const DU={uDP:{value:0},uFront:{value:.5},uVoxFront:{value:.5},uTipGlow:{value:0},uPortalGlow:{value:0},uStretch:{value:0},uTime};
+const woodTex=tex(256,16,(c,w,h)=>{c.fillStyle='#b98a52';c.fillRect(0,0,w,h);for(let i=0;i<40;i++){c.strokeStyle=`rgba(${90+i%3*20},${55+i%4*8},25,${.15+(i*37%10)/40})`;
+ c.lineWidth=1+(i%3);c.beginPath();const y=(i*7.3)%h;c.moveTo(0,y);for(let x=0;x<=w;x+=16)c.lineTo(x,y+Math.sin(x*.05+i)*1.5);c.stroke()}});
+const aMats=[new THREE.MeshStandardMaterial({map:woodTex,roughness:.65}),new THREE.MeshStandardMaterial({color:0x9aa3a8,metalness:.85,roughness:.28}),
  new THREE.MeshStandardMaterial({color:0xf0ebe0,side:THREE.DoubleSide,roughness:.9})];
-{const sh=new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.8,8),aMats[0]);sh.rotation.z=Math.PI/2;
- const hd=new THREE.Mesh(new THREE.ConeGeometry(.014,.06,8),aMats[1]);hd.rotation.z=-Math.PI/2;hd.position.x=.43;arrow.add(sh,hd);
- for(let i=0;i<3;i++){const f=new THREE.Mesh(new THREE.PlaneGeometry(.12,.025),aMats[2]);f.position.set(-.33,0,0);
+// реалистичная стрела: dissolve по продольной оси (x: -0.4 хвост … +0.46 наконечник), фронт идёт от наконечника
+aMats.forEach(m=>{m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,DU);
+ sh.vertexShader='varying float vAx;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvAx=position.x;');
+ sh.fragmentShader='varying float vAx;uniform float uDP,uFront,uTipGlow,uPortalGlow;\n'+sh.fragmentShader
+  .replace('void main() {','void main() {\n if(vAx>uFront+.012) discard;')
+  .replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+  float fr=pow(1.-abs(dot(normal,normalize(vViewPosition))),2.);
+  totalEmissiveRadiance+=vec3(.35,.85,1.2)*(exp(-abs(vAx-uFront)*90.)*3.*step(.001,uDP)+uTipGlow*smoothstep(.37,.46,vAx)*.9+uPortalGlow*fr*1.6);`)}});
+const holoMat=new THREE.ShaderMaterial({uniforms:DU,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,
+ vertexShader:`varying float vAx;varying vec3 vP,vN,vV;void main(){vAx=position.x;vP=position;vN=normalize(normalMatrix*normal);
+  vec4 mv=modelViewMatrix*vec4(position,1.);vV=-mv.xyz;gl_Position=projectionMatrix*mv;}`,
+ fragmentShader:`uniform float uDP,uFront,uVoxFront,uTime;varying float vAx;varying vec3 vP,vN,vV;
+  void main(){float holo=smoothstep(uFront,uFront+.02,vAx);if(holo<.01||uDP<.001)discard;
+  float vox=smoothstep(uVoxFront,uVoxFront+.05,vAx);
+  vec3 g=abs(fract(vP*vec3(70.,420.,420.))-.5);float line=1.-smoothstep(.0,.09,min(g.x,min(g.y,g.z)));
+  float fres=pow(1.-abs(dot(normalize(vN),normalize(vV))),2.);
+  float pulse=smoothstep(.96,1.,sin(vAx*38.-uTime*16.));
+  float edge=exp(-abs(vAx-uFront)*110.);
+  float a=(.14+line*.7+fres*.5+pulse*.7)*holo*(1.-.8*vox)+edge*1.6;
+  gl_FragColor=vec4(vec3(.32,.85,1.)*(.75+edge*1.6+pulse*.9),a*.8);}`});
+const holo=new THREE.Group();holo.renderOrder=2;
+{const sh=new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.8,8,24),aMats[0]);sh.rotation.z=Math.PI/2;
+ const hd=new THREE.Mesh(new THREE.ConeGeometry(.014,.06,8,4),aMats[1]);hd.rotation.z=-Math.PI/2;hd.position.x=.43;arrow.add(sh,hd);
+ for(let i=0;i<3;i++){const f=new THREE.Mesh(new THREE.PlaneGeometry(.12,.025,6,1),aMats[2]);f.position.set(-.33,0,0);
   f.geometry.translate(0,.016,0);f.rotation.x=i*Math.PI*2/3;arrow.add(f)}
- arrow.traverse(o=>{o.castShadow=true})}
-aMats.forEach(m=>{m.transparent=true});
+ // «запекаем» трансформации в геометрию → position.x в шейдере = продольная ось стрелы
+ [...arrow.children].forEach(o=>{o.updateMatrix();o.geometry.applyMatrix4(o.matrix);o.position.set(0,0,0);o.rotation.set(0,0,0);o.castShadow=true;
+  const h=new THREE.Mesh(o.geometry,holoMat);h.renderOrder=2;holo.add(h)});
+ arrow.add(holo)}
+// детерминированный ГПСЧ
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+// воксели: одна InstancedBufferGeometry (один draw call), точки лежат на поверхности стрелы
+const VOX_N=mobile?380:1000;
+const voxGeo=new THREE.InstancedBufferGeometry().copy(new THREE.BoxGeometry(1,1,1));voxGeo.instanceCount=VOX_N;
+{const R=rng(7),base=new Float32Array(VOX_N*3),rnd=new Float32Array(VOX_N*4);
+ for(let i=0;i<VOX_N;i++){const u=R();let x,y,z;
+  if(u<.62){x=-.4+R()*.8;const a=R()*6.283;y=Math.cos(a)*.007;z=Math.sin(a)*.007}            // древко
+  else if(u<.8){x=.4+R()*.06;const r=.014*(1-(x-.4)/.06),a=R()*6.283;y=Math.cos(a)*r;z=Math.sin(a)*r} // наконечник
+  else{x=-.39+R()*.12;const h=.004+R()*.026,a=Math.floor(R()*3)*2.094;y=Math.cos(a)*h;z=Math.sin(a)*h} // оперение
+  base.set([x,y,z],i*3);rnd.set([R(),R(),R(),R()],i*4)}
+ voxGeo.setAttribute('aBase',new THREE.InstancedBufferAttribute(base,3));voxGeo.setAttribute('aRnd',new THREE.InstancedBufferAttribute(rnd,4))}
+const voxMat=new THREE.ShaderMaterial({uniforms:DU,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+ vertexShader:`attribute vec3 aBase;attribute vec4 aRnd;uniform float uDP,uVoxFront,uStretch;varying float vOn,vR;
+  void main(){float on=smoothstep(uVoxFront,uVoxFront+.05,aBase.x);vOn=on;vR=aRnd.z;
+  float s=.006*on*(.55+.9*aRnd.x);vec3 p=aBase;vec2 rd=normalize(aBase.yz+vec2(1e-5));
+  p.yz+=rd*on*(.004+.012*aRnd.y)*(.6+.4*sin(uDP*24.+aRnd.z*6.283));
+  vec3 v=position*s;float st=uStretch*(.4+aRnd.w);v.x*=1.+st*60.;p.x-=st*.35;
+  gl_Position=projectionMatrix*modelViewMatrix*vec4(p+v,1.);}`,
+ fragmentShader:`uniform float uTime;varying float vOn,vR;void main(){if(vOn<.01)discard;
+  float fl=.75+.25*sin(uTime*9.+vR*40.);gl_FragColor=vec4(vec3(.4,.9,1.2)*.55*fl,vOn*.85);}`});
+const vox=new THREE.Mesh(voxGeo,voxMat);vox.frustumCulled=false;vox.renderOrder=3;arrow.add(vox);
+// лёгкие частицы вокруг стрелы у портала
+const AMB_N=mobile?90:220;
+{const R=rng(31),b=new Float32Array(AMB_N*3),r=new Float32Array(AMB_N);
+ for(let i=0;i<AMB_N;i++){const a=R()*6.283,rad=.04+R()*.22;b.set([-.7+R()*1.4,Math.cos(a)*rad,Math.sin(a)*rad],i*3);r[i]=R()}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(b,3));g.setAttribute('aR',new THREE.BufferAttribute(r,1));
+ const m=new THREE.ShaderMaterial({uniforms:DU,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  vertexShader:`attribute float aR;uniform float uDP,uStretch;varying float vA;void main(){vec3 p=position;
+   p.x=mod(p.x+.7-uDP*2.5*(.5+aR),1.4)-.7;vA=smoothstep(.2,.6,uDP)*(1.-smoothstep(.65,.7,abs(p.x)));
+   vec4 mv=modelViewMatrix*vec4(p,1.);gl_PointSize=(1.+2.*aR)*(1.+uStretch*2.)*(2.2/-mv.z);gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:`varying float vA;void main(){float d=length(gl_PointCoord-.5);if(d>.5)discard;gl_FragColor=vec4(vec3(.5,.95,1.3)*1.2,.6*vA*(1.-d*2.));}`});
+ const pts=new THREE.Points(g,m);pts.frustumCulled=false;pts.renderOrder=3;arrow.add(pts)}
+// кусочно-линейная карта: uDP → положение фронта по оси стрелы
+const FR=[[0,.5],[.25,.38],[.5,0],[.75,-.3],[1,-.46]];
+function frontAt(d){d=Math.min(1,Math.max(0,d));for(let i=1;i<FR.length;i++)if(d<=FR[i][0]){const[a,fa]=FR[i-1],[b,fb]=FR[i];return lerp(fa,fb,(d-a)/(b-a))}return -.46}
+const portalLight=new THREE.PointLight(0x7fdcff,0,40,2);scene.add(portalLight);
 
 /* траектория (пунктир) и векторы скорости */
 const C0=new THREE.Vector3();// мировой центр стрелы в момент выстрела
@@ -310,20 +379,22 @@ let trail=null;
 
 /* ---------- ПОРТАЛ ---------- */
 const portal=new THREE.Group();steppe.add(portal);
-const pU={uTime,uOp:{value:0}};
+const pU={uTime,uOp:{value:0},uWave:{value:0}};
 {const disc=new THREE.Mesh(new THREE.CircleGeometry(3.2,64),new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:pU,side:THREE.DoubleSide,
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader:`uniform float uTime,uOp;varying vec2 vUv;void main(){vec2 c=vUv-.5;float r=length(c)*2.,a=atan(c.y,c.x);
-  float sw=sin(a*7.+r*12.-uTime*3.)*.5+.5;vec3 inner=mix(vec3(1.,.72,.45),vec3(.78,.36,.2),r);vec3 edge=vec3(.45,.9,1.);
-  vec3 col=mix(inner,edge,smoothstep(.45,1.,r)+sw*.18*r);col+=vec3(1.)*pow(1.-r,3.)*.6;
-  gl_FragColor=vec4(col,(1.-smoothstep(.93,1.,r))*uOp*(.55+.35*r));}`}));
+  fragmentShader:`uniform float uTime,uOp,uWave;varying vec2 vUv;void main(){vec2 c=vUv-.5;float r=length(c)*2.,a=atan(c.y,c.x);
+  float sw=sin(a*7.+r*12.-uTime*3.)*.5+.5;vec3 inner=mix(vec3(.08,.3,.45),vec3(.02,.1,.18),r);vec3 edge=vec3(.45,.9,1.);
+  vec3 col=mix(inner,edge,smoothstep(.62,1.,r)*.8+sw*.14*r);col+=vec3(.8,.95,1.)*pow(1.-r,3.)*.35;
+  float R=uWave*1.15,rings=0.;for(int i=0;i<4;i++){float ri=R-float(i)*.18;rings+=exp(-abs(r-ri)*38.)*step(0.,ri)*(1.-float(i)*.2);}
+  rings*=(1.-uWave)*step(.001,uWave);col+=vec3(.55,.95,1.4)*rings*3.;
+  gl_FragColor=vec4(col,clamp((1.-smoothstep(.93,1.,r))*uOp*(.55+.35*r)+rings,0.,1.));}`}));
  const ring=new THREE.Mesh(new THREE.TorusGeometry(3.25,.07,12,128),new THREE.MeshBasicMaterial({color:0x9ff0ff,transparent:true,toneMapped:false}));
  const orn=tex(1024,1024,(c,w)=>{c.translate(w/2,w/2);c.strokeStyle='rgba(160,240,255,.95)';c.lineWidth=5;
   c.beginPath();c.arc(0,0,w*.405,0,7);c.stroke();c.beginPath();c.arc(0,0,w*.49,0,7);c.stroke();
   for(let i=0;i<18;i++){c.save();c.rotate(i/18*Math.PI*2);c.translate(0,-w*.447);c.rotate(Math.PI);koshkar(c,40);c.restore()}});
  const ornM=new THREE.Mesh(new THREE.RingGeometry(3.3,4.05,128),new THREE.MeshBasicMaterial({map:orn,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,toneMapped:false}));
  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:tex(128,128,(c,w)=>{const g=c.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,'rgba(170,240,255,.9)');g.addColorStop(.5,'rgba(90,200,255,.25)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(0,0,w,w)}),
-  blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));glow.scale.set(16,16,1);
+  blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));glow.scale.set(11,11,1);
  const pn=mobile?250:600,pp=new Float32Array(pn*3);for(let i=0;i<pn;i++){const a=Math.random()*7,r=3.2+Math.random()*1.6;pp.set([Math.cos(a)*r,Math.sin(a)*r,(Math.random()-.5)*.6],i*3)}
  const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(pp,3));
  const parts=new THREE.Points(pg,new THREE.PointsMaterial({color:0xaef3ff,size:.06,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
@@ -361,7 +432,11 @@ function frame(p){
  let aPos=tmp,dirA;
  if(t<0){aPos.set(.6-.14-d+.4,0,0).applyMatrix4(rig.matrixWorld);arrow.position.copy(aPos);arrow.rotation.set(0,0,ang);dirA=new THREE.Vector3(Math.cos(ang),Math.sin(ang),0)}
  else{posAt(t,aPos);arrow.position.copy(aPos);const vy=VY-G*t,a=Math.atan2(vy,VX);arrow.rotation.set(t*18,0,a);dirA=new THREE.Vector3(Math.cos(a),Math.sin(a),0)}
- const fade=1-ss(.93,.99,p);aMats.forEach(m=>m.opacity=fade);arrow.visible=fade>.01;
+ const fade=1-ss(.93,.99,p);arrow.visible=fade>.01;
+ // цифровизация: 0 — реальная стрела, 1 — полностью цифровая (только от progress → обратимо)
+ const dp=ss(.70,.862,p);DU.uDP.value=dp;DU.uFront.value=frontAt(dp);DU.uVoxFront.value=frontAt((dp-.15)/.85);
+ DU.uTipGlow.value=ss(.66,.78,p);DU.uPortalGlow.value=ss(.72,.86,p);DU.uStretch.value=ss(.855,.878,p);
+ holo.visible=dp>.001;
 
  // след
  if(trail){scene.remove(trail);trail.geometry.dispose();trail=null}
@@ -371,7 +446,7 @@ function frame(p){
  // траектория и векторы
  if(!trajG.userData.ok){const a=trajG.attributes.position;for(let i=0;i<trajN;i++){posAt(3.1*i/(trajN-1),tmp2);a.setXYZ(i,tmp2.x,tmp2.y,tmp2.z)}a.needsUpdate=true;traj.computeLineDistances();trajG.userData.ok=1}
  traj.material.opacity=.75*(ss(.44,.5,p)-ss(.76,.84,p));traj.visible=traj.material.opacity>.01;
- const vOn=t>0&&p>.47&&p<.76;vArrows.forEach(a=>a.visible=vOn);
+ const vOn=t>0&&p>.47&&p<.68;vArrows.forEach(a=>a.visible=vOn);
  if(vOn){const vy=VY-G*t,sc=.03;const o=tmp2.copy(aPos).add(new THREE.Vector3(0,-.18,0));
   vArrows[0].position.copy(o);vArrows[0].setDirection(new THREE.Vector3(VX,vy,0).normalize());vArrows[0].setLength(Math.hypot(VX,vy)*sc,.12,.05);
   vArrows[1].position.copy(o);vArrows[1].setDirection(new THREE.Vector3(1,0,0));vArrows[1].setLength(VX*sc,.1,.045);
@@ -379,8 +454,10 @@ function frame(p){
 
  // портал
  posAt(T_PORTAL,portal.position);{const vy=VY-G*T_PORTAL;portal.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(VX,vy,0).normalize())}
- const po=ss(.64,.76,p);pU.uOp.value=po;portal.visible=po>.01;const U=portal.userData;
- U.ring.material.opacity=po;U.ornM.material.opacity=po;U.glow.material.opacity=po*.8;U.parts.material.opacity=po;
+ const po=ss(.64,.76,p);pU.uOp.value=po;pU.uWave.value=ss(.858,.89,p);
+ portalLight.position.copy(portal.position);portalLight.intensity=160*ss(.7,.86,p)*(1+2*bump(.85,.866,.89,p));
+ if(bloom)bloom.strength=(mobile?.25:.35)+.4*ss(.72,.86,p);portal.visible=po>.01;const U=portal.userData;
+ U.ring.material.opacity=po;U.ornM.material.opacity=po;U.glow.material.opacity=po*.3;U.parts.material.opacity=po;
  U.ornM.rotation.z=uTime.value*.15;U.parts.rotation.z=-uTime.value*.3;portal.scale.setScalar(lerp(.6,1,po));
 
 
@@ -391,8 +468,8 @@ function frame(p){
  const cu=mid.clone().add(new THREE.Vector3(.55,.1,1.0));camP.lerp(cu,k2);camL.lerp(mid,k2);
  // слежение
  const w=ss(.356,.43,p);
- if(w>0){const off=new THREE.Vector3(-1.9,.42,1.05).lerp(new THREE.Vector3(-1.7,.12,.12),ss(.76,.86,p));
-  fP.copy(aPos).add(off);fL.copy(aPos).addScaledVector(dirA,2.2);
+ if(w>0){const off=new THREE.Vector3(-1.9,.42,1.05).lerp(new THREE.Vector3(-.38,.1,.62),ss(.66,.76,p)).lerp(new THREE.Vector3(-.95,.06,.06),ss(.80,.862,p));
+  fP.copy(aPos).add(off);fL.copy(aPos).addScaledVector(dirA,lerp(2.2,.7,bump(.66,.76,.84,p)));
   camP.lerp(fP,w);camL.lerp(fL,w)}
  camera.position.copy(camP);camera.lookAt(camL);
  sun.target.position.copy(archer.position);sun.position.copy(SUN).multiplyScalar(40);
@@ -408,18 +485,31 @@ function frame(p){
  let si=0;steps.forEach((s,i)=>{if(p>=s[0])si=i});if(si!==lastStep){lastStep=si;$('chip').innerHTML=`<b>${steps[si][1]}</b><span>${steps[si][2]}</span>`}
 }
 
+/* ---------- bloom ---------- */
+composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));
+bloom=new UnrealBloomPass(new THREE.Vector2(256,256),.35,.4,.92);composer.addPass(bloom);composer.addPass(new OutputPass());
+
 /* ---------- размер ---------- */
-function resize(){const w=innerWidth,h=$('stage').clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w/h<1?68:50;camera.updateProjectionMatrix()}
+function resize(){const w=innerWidth,h=$('stage').clientHeight;renderer.setSize(w,h,false);composer.setPixelRatio(renderer.getPixelRatio());composer.setSize(w,h);
+ if(mobile)bloom.resolution.set(w/2,h/2);camera.aspect=w/h;camera.fov=w/h<1?68:50;camera.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 
 /* ---------- скролл ---------- */
 gsap.registerPlugin(ScrollTrigger);ScrollTrigger.config({ignoreMobileResize:true});
-gsap.to(state,{p:1,ease:'none',scrollTrigger:{trigger:'#stage',start:'top top',end:()=>'+='+innerHeight*(mobile?6:7),pin:true,scrub:mobile?.6:1,anticipatePin:1}});
+const tween=gsap.to(state,{p:1,ease:'none',scrollTrigger:{trigger:'#stage',start:'top top',end:()=>'+='+innerHeight*(mobile?6:7),pin:true,scrub:mobile?.6:1,anticipatePin:1}});
 
-const clock=new THREE.Clock();
-function loop(){uTime.value=clock.getElapsedTime();clouds.forEach((s,i)=>{s.position.x+=Math.sin(i)*.02});frame(state.p);renderer.render(scene,camera);requestAnimationFrame(loop)}
+const clock=new THREE.Clock();let raf=0;
+function loop(){uTime.value=clock.getElapsedTime();clouds.forEach((s,i)=>{s.position.x+=Math.sin(i)*.02});frame(state.p);composer.render();raf=requestAnimationFrame(loop)}
 drawGraph(0);loop();
 requestAnimationFrame(()=>{const l=$('load');if(!l)return;l.style.opacity=0;setTimeout(()=>l.remove(),700)});
-window.__dala={state,frame};
+
+/* ---------- очистка ---------- */
+function dispose(){cancelAnimationFrame(raf);removeEventListener('resize',resize);tween.scrollTrigger&&tween.scrollTrigger.kill();tween.kill();
+ if(trail){trail.geometry.dispose()}const seen=new Set();
+ scene.traverse(o=>{if(o.geometry&&!seen.has(o.geometry)){seen.add(o.geometry);o.geometry.dispose()}
+  [].concat(o.material||[]).forEach(m=>{if(seen.has(m))return;seen.add(m);for(const k in m)if(m[k]&&m[k].isTexture)m[k].dispose();m.dispose()})});
+ composer.dispose();renderer.dispose()}
+addEventListener('pagehide',dispose,{once:true});
+window.__dala={state,frame,DU};
 </script>
 </body></html>
