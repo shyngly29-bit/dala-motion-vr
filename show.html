@@ -71,6 +71,7 @@ body{font-family:Inter,sans-serif;color:#fff;background:#05161a}
 #s1 h1{font:700 clamp(44px,7.4vw,118px)/1 Lora;letter-spacing:.01em;margin:10px 0 14px;text-shadow:0 6px 40px rgba(0,0,0,.35)}
 #s1 p{font:400 clamp(15px,1.5vw,22px)/1.45 Inter;color:#f3e6d6;max-width:640px}
 #s1 .by{margin-top:18px;font:500 clamp(12px,1vw,15px) Inter;color:#d9c6b0}
+.hubbtn{display:inline-block;margin-top:16px;font:600 15px Inter;color:#03222b;background:linear-gradient(90deg,#2fb4d6,#8fe9ff);padding:12px 20px;border-radius:30px;text-decoration:none;pointer-events:auto;box-shadow:0 0 30px rgba(143,233,255,.4)}
 .orn{display:block;width:120px;height:14px;margin-bottom:14px;opacity:.8}
 #s2head,#s3head,.shead{left:5%;top:9%}
 .shead .kick,#s2head .kick{font:700 clamp(10px,.9vw,13px) Inter;letter-spacing:.12em;text-transform:uppercase;color:var(--cy)}
@@ -181,7 +182,7 @@ body{font-family:Inter,sans-serif;color:#fff;background:#05161a}
   </div>
   <div class="sl" id="s2head"><div class="kick">02 · Жоспар</div><h2>Жобаның мақсаты</h2></div>
   <div class="sl shead" id="s3head"><div class="kick">03 · Механика</div><h2>Садақ ату физикасы</h2></div>
-  <div class="sl shead" id="s4head"><div class="kick">04 · Өтпелі сахна</div><h2>Цифрлық портал</h2></div>
+  <div class="sl shead" id="s4head"><div class="kick">04 · Өтпелі сахна</div><h2>Цифрлық портал</h2><a class="hubbtn" href="games.html">VR-хабқа кіру → 4 ойын</a></div>
  </div>
  <div class="hcard goal" data-a="0"><b>Мақсат</b>Ұлттық ойындардың физикасын VR-ортада көрнекі модельдеу</div>
  <div class="hcard" data-a="1"><b>Міндет 1</b>Ойын механикасын талдау</div>
@@ -785,7 +786,7 @@ function drive(){
  vis($('s1'),ss(.72,.95,S)*(1-ss(1.08,1.25,S)),`translateY(${(1-ss(.72,.95,S))*24}px)`);
  vis($('s2head'),bump(1.3,1.6,2.1,S));
  vis($('s3head'),bump(2.02,2.15,2.55,S));
- vis($('s4head'),bump(3.1,3.3,3.7,S));
+ vis($('s4head'),ss(3.1,3.3,S)*(1-ss(4.3,4.5,S)));
  setOp('title',0);$('hint').style.opacity=((1-ss(.02,.2,S))*.85).toFixed(3);
  // слайды-шаблоны 5–9: у каждого свой переход
  phs.forEach(el=>{const k=+el.dataset.k,o=S-k,a=Math.max(0,1-Math.abs(o)*2.4);let tr='';
@@ -807,7 +808,7 @@ SLIDES.forEach((n,i)=>{const b=document.createElement('button');b.innerHTML=`<i>
 const LAWS=[['Асық ату','p = m·v · импульстің сақталу заңы · F<sub>үйк</sub> = μ·m·g'],['Садақ ату','F = k·x · E = k·x²/2 · y = v₀ sinθ·t − ½gt²'],
  ['Арқан тарту','Ньютонның III заңы · F<sub>max</sub> = μ₀·m·g · a = (F₁ − F₂)/(m₁ + m₂)'],['Тоғызқұмалақ','Логикалық ойын: есеп, стратегия, ықтималдық (физикалық емес — математикалық режим)']];
 document.querySelectorAll('.games button').forEach(b=>b.onclick=()=>{const g=+b.dataset.g;document.querySelectorAll('.games button').forEach(x=>x.classList.toggle('act',x===b));
- $('law').innerHTML=`<div class="fx2">${LAWS[g][0]}</div><p>${LAWS[g][1]}</p>`});
+ const gid=['asyk','bow','tug',null][g];$('law').innerHTML=`<div class="fx2">${LAWS[g][0]}</div><p>${LAWS[g][1]}</p>`+(gid?`<a class="hubbtn" href="games.html#${gid}">Ойнау →</a>`:'')});
 // ----- прокрутка ↔ S -----
 gsap.registerPlugin(ScrollTrigger,ScrollToPlugin);ScrollTrigger.config({ignoreMobileResize:true});
 const tween=gsap.to(show,{S:10,ease:'none',scrollTrigger:{trigger:'#scroller',start:'top top',end:'bottom bottom',scrub:mobile?.6:1,
