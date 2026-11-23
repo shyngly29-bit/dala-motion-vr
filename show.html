@@ -438,30 +438,38 @@ const GLB={ready:false,bones:{},mixer:null};
   lo.getWorldPosition(vB);end.getWorldPosition(vC);
   rotWorld(lo,qB.setFromUnitVectors(vC.sub(vB).normalize(),vP.subVectors(target,vB).normalize()))}
  const yaw=(bone,a)=>rotWorld(bone,qB.setFromAxisAngle(new THREE.Vector3(0,1,0),a));
+ // базовая поза запоминается один раз и восстанавливается каждый кадр → без накопления поворотов
  function curl(side,amt){['Index','Middle','Ring','Pinky'].forEach(f=>[1,2,3].forEach(i=>{const b=B(`mixamorig${side}Hand${f}${i}`);if(b)b.rotation.z+=(side==='Left'?amt:-amt)}))}
- const tGrip=new THREE.Vector3(),tNock=new THREE.Vector3(),pL=new THREE.Vector3(),pR=new THREE.Vector3();
+ const tGrip=new THREE.Vector3(),tNock=new THREE.Vector3(),pBow=new THREE.Vector3(),pDraw=new THREE.Vector3();
  GLB.update=function(){
-  GLB.mixer.update(0);                                   // базовая поза (Idle, кадр задан детерминированно)
-  const S=GLB.root;S.updateMatrixWorld(true);
-  yaw(B('mixamorigSpine1'),.25);yaw(B('mixamorigNeck'),.45);yaw(B('mixamorigHead'),.55);   // голова к цели (+X)
-  tGrip.set(.6,0,.0).applyMatrix4(rig.matrixWorld);tNock.copy(handR.position).applyMatrix4(rig.matrixWorld);
-  pL.set(.35,1.2,-.4);pR.set(-.55,1.75,-.15);
-  ik2(B('mixamorigLeftArm'),B('mixamorigLeftForeArm'),B('mixamorigLeftHand'),tGrip,pL);
-  ik2(B('mixamorigRightArm'),B('mixamorigRightForeArm'),B('mixamorigRightHand'),tNock,pR);
-  curl('Left',.95);curl('Right',.7);
+  GLB.base.forEach((q,b)=>b.quaternion.copy(q));GLB.root.updateMatrixWorld(true);
+  yaw(B('mixamorigSpine1'),.2);yaw(B('mixamorigNeck'),.45);yaw(B('mixamorigHead'),.55);   // взгляд к цели (+X)
+  tGrip.set(.6,0,0).applyMatrix4(rig.matrixWorld);tNock.copy(handR.position).applyMatrix4(rig.matrixWorld);
+  pBow.set(.3,1.0,.45);pDraw.set(-.6,1.85,.05);
+  const W=GLB.bow,D=GLB.draw;
+  ik2(B(`mixamorig${W}Arm`),B(`mixamorig${W}ForeArm`),B(`mixamorig${W}Hand`),tGrip,pBow);
+  ik2(B(`mixamorig${D}Arm`),B(`mixamorig${D}ForeArm`),B(`mixamorig${D}Hand`),tNock,pDraw);
+  curl(W,.9);curl(D,.55);
   [armL,armR1,armR2,handL,handR].forEach(m=>m&&(m.visible=false))};
  import('three/addons/loaders/GLTFLoader.js').then(({GLTFLoader})=>new GLTFLoader().loadAsync('assets/Soldier.glb')).then(g=>{
-  const root=g.scene;root.traverse(o=>{if(o.isBone)GLB.bones[o.name]=o;if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(/visor/i.test(o.name))o.visible=false;
-   if(o.material){o.material.envMapIntensity=.8;o.material.layers}}});
-  root.updateMatrixWorld(true);const top=new THREE.Vector3(),ft=new THREE.Vector3();GLB.bones.mixamorigHead.getWorldPosition(top);GLB.bones.mixamorigLeftToeBase.getWorldPosition(ft);const s=1.50/(top.y-ft.y);root.scale.multiplyScalar(s);root.updateMatrixWorld(true);GLB.bones.mixamorigLeftToeBase.getWorldPosition(ft);root.position.y-=ft.y-.04;
-  // повернуть так, чтобы левое плечо смотрело на цель (+X), грудь — к камере (+Z)
-  root.updateMatrixWorld(true);const l=new THREE.Vector3(),r=new THREE.Vector3();GLB.bones.mixamorigLeftArm.getWorldPosition(l);GLB.bones.mixamorigRightArm.getWorldPosition(r);
-  const dir=l.sub(r);root.rotation.y=Math.atan2(dir.z,dir.x);root.updateMatrixWorld(true);
-  GLB.root=root;GLB.mixer=new THREE.AnimationMixer(root);const idle=GLB.mixer.clipAction(THREE.AnimationClip.findByName(g.animations,'Idle'));idle.play();idle.time=.4;
-  archer.children.forEach(c=>{if(c!==rig)c.visible=false});archer.add(root);
-  // контровой холодный свет, чтобы отделить силуэт от заката
+  const root=g.scene;root.traverse(o=>{if(o.isBone)GLB.bones[o.name]=o;if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false;if(/visor/i.test(o.name))o.visible=false}});
+  // базовая поза Idle (один кадр)
+  const mixer=new THREE.AnimationMixer(root);const idle=mixer.clipAction(THREE.AnimationClip.findByName(g.animations,'Idle'));idle.play();mixer.setTime(.4);
+  // масштаб по костям: голова ≈ 1.54 м над стопой
+  root.updateMatrixWorld(true);const v1=new THREE.Vector3(),v2=new THREE.Vector3(),v3=new THREE.Vector3();
+  B('mixamorigHead').getWorldPosition(v1);B('mixamorigLeftToeBase').getWorldPosition(v2);root.scale.multiplyScalar(1.5/(v1.y-v2.y));
+  // направление взгляда по стопам (носок впереди пятки) → лицом к камере (+Z)
+  root.updateMatrixWorld(true);const f=new THREE.Vector3();
+  for(const sd of['Left','Right']){B(`mixamorig${sd}ToeBase`).getWorldPosition(v1);B(`mixamorig${sd}Foot`).getWorldPosition(v2);f.add(v1.sub(v2))}
+  root.rotation.y-=Math.atan2(f.x,f.z);root.updateMatrixWorld(true);
+  B('mixamorigLeftToeBase').getWorldPosition(v2);root.position.y-=v2.y-.04;root.updateMatrixWorld(true);
+  // рука с луком — то плечо, что ближе к цели (+X)
+  B('mixamorigLeftArm').getWorldPosition(v1);B('mixamorigRightArm').getWorldPosition(v3);
+  GLB.bow=v1.x>v3.x?'Left':'Right';GLB.draw=GLB.bow==='Left'?'Right':'Left';
+  GLB.base=new Map();Object.values(GLB.bones).forEach(b=>GLB.base.set(b,b.quaternion.clone()));
+  GLB.root=root;archer.children.forEach(c=>{if(c!==rig)c.visible=false});archer.add(root);
   const rim=new THREE.DirectionalLight(0x9fc8ff,1.4);rim.position.set(-3,3,-4);rim.target=root;archer.add(rim);
-  GLB.ready=true}).catch(e=>console.warn('GLB not loaded, placeholder kept',e));
+  window.__GLB=GLB;GLB.ready=true}).catch(e=>console.warn('GLB not loaded, placeholder kept',e));
 }
 
 /* стрела */
