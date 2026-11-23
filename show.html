@@ -428,28 +428,35 @@ const GLB={ready:false,bones:{},mixer:null};
  // поворот кости в мировых координатах на дельту q
  function rotWorld(bone,q){bone.getWorldQuaternion(qA);qA.premultiply(q);bone.parent.getWorldQuaternion(qP);bone.quaternion.copy(qP.invert().multiply(qA));bone.updateWorldMatrix(false,true)}
  // аналитический IK на две кости: upper→lower→end тянется к target, локоть — в сторону pole
+ const vN=new THREE.Vector3(),vX=new THREE.Vector3(),q1=new THREE.Quaternion();
+ // аналитический IK на две кости, непрерывный (без перескоков):
+ //  плечо — в два шага (база → направление на полюс → направление на локоть), каждый шаг < 180°;
+ //  предплечье — шарнир вокруг оси локтя на знаковый угол.
  function ik2(up,lo,end,target,pole){
   up.getWorldPosition(vA);lo.getWorldPosition(vB);end.getWorldPosition(vC);
-  const a=vA.distanceTo(vB),b=vB.distanceTo(vC);vD.subVectors(target,vA);const d=Math.min(Math.max(vD.length(),Math.abs(a-b)+1e-3),a+b-1e-3);vD.normalize();
+  const a=vA.distanceTo(vB),b=vB.distanceTo(vC);vD.subVectors(target,vA);const d=Math.min(Math.max(vD.length(),Math.abs(a-b)+1e-3),(a+b)*.96);vD.normalize();
   vU.subVectors(pole,vA);vU.addScaledVector(vD,-vU.dot(vD)).normalize();
   const ca=(a*a+d*d-b*b)/(2*a*d),sa=Math.sqrt(Math.max(0,1-ca*ca));
-  vT.copy(vA).addScaledVector(vD,a*ca).addScaledVector(vU,a*sa);          // новое положение локтя
-  rotWorld(up,qB.setFromUnitVectors(vB.sub(vA).normalize(),vP.subVectors(vT,vA).normalize()));
-  lo.getWorldPosition(vB);end.getWorldPosition(vC);
-  rotWorld(lo,qB.setFromUnitVectors(vC.sub(vB).normalize(),vP.subVectors(target,vB).normalize()))}
+  vT.copy(vD).multiplyScalar(ca).addScaledVector(vU,sa);                    // направление на локоть
+  vX.subVectors(vB,vA).normalize();
+  q1.setFromUnitVectors(vX,vU);qB.setFromUnitVectors(vU,vT).multiply(q1);rotWorld(up,qB);
+  vN.crossVectors(vD,vU).normalize();                                     // ось локтевого сгиба
+  lo.getWorldPosition(vB);end.getWorldPosition(vC);vX.subVectors(vC,vB).normalize();vP.subVectors(target,vB).normalize();
+  const ang=Math.atan2(vX.clone().cross(vP).dot(vN),vX.dot(vP));rotWorld(lo,qB.setFromAxisAngle(vN,ang))}
  const yaw=(bone,a)=>rotWorld(bone,qB.setFromAxisAngle(new THREE.Vector3(0,1,0),a));
  // базовая поза запоминается один раз и восстанавливается каждый кадр → без накопления поворотов
  function curl(side,amt){['Index','Middle','Ring','Pinky'].forEach(f=>[1,2,3].forEach(i=>{const b=B(`mixamorig${side}Hand${f}${i}`);if(b)b.rotation.z+=(side==='Left'?amt:-amt)}))}
  const tGrip=new THREE.Vector3(),tNock=new THREE.Vector3(),pBow=new THREE.Vector3(),pDraw=new THREE.Vector3();
- GLB.update=function(){
+ GLB.update=function(p){
   GLB.base.forEach((q,b)=>b.quaternion.copy(q));GLB.root.updateMatrixWorld(true);
   yaw(B('mixamorigSpine1'),.2);yaw(B('mixamorigNeck'),.45);yaw(B('mixamorigHead'),.55);   // взгляд к цели (+X)
-  tGrip.set(.6,0,0).applyMatrix4(rig.matrixWorld);tNock.copy(handR.position).applyMatrix4(rig.matrixWorld);
+  tGrip.set(.6,0,0).applyMatrix4(rig.matrixWorld);// тянущая рука идёт за тетивой только при натяжении; после выстрела остаётся у щеки и чуть уходит назад (follow-through)
+  const dh=XMAX*ss(.21,.34,p)+.06*ss(.355,.42,p);tNock.set(.46-dh-.02,.01,.03).applyMatrix4(rig.matrixWorld);
   pBow.set(.3,1.0,.45);pDraw.set(-.6,1.85,.05);
   const W=GLB.bow,D=GLB.draw;
   ik2(B(`mixamorig${W}Arm`),B(`mixamorig${W}ForeArm`),B(`mixamorig${W}Hand`),tGrip,pBow);
   ik2(B(`mixamorig${D}Arm`),B(`mixamorig${D}ForeArm`),B(`mixamorig${D}Hand`),tNock,pDraw);
-  curl(W,.9);curl(D,.55);
+  curl(W,.9);curl(D,.55*(1-ss(.355,.372,p)));
   [armL,armR1,armR2,handL,handR].forEach(m=>m&&(m.visible=false))};
  import('three/addons/loaders/GLTFLoader.js').then(({GLTFLoader})=>new GLTFLoader().loadAsync('assets/Soldier.glb')).then(g=>{
   const root=g.scene;root.traverse(o=>{if(o.isBone)GLB.bones[o.name]=o;if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false;if(/visor/i.test(o.name))o.visible=false}});
@@ -467,6 +474,10 @@ const GLB={ready:false,bones:{},mixer:null};
   B('mixamorigLeftArm').getWorldPosition(v1);B('mixamorigRightArm').getWorldPosition(v3);
   GLB.bow=v1.x>v3.x?'Left':'Right';GLB.draw=GLB.bow==='Left'?'Right':'Left';
   GLB.base=new Map();Object.values(GLB.bones).forEach(b=>GLB.base.set(b,b.quaternion.clone()));
+  // руки берём из T-позы: от неё до позы лучника повороты небольшие → нет перескоков
+  const tp=THREE.AnimationClip.findByName(g.animations,'TPose');
+  if(tp){idle.stop();mixer.clipAction(tp).play();mixer.setTime(0);
+   Object.values(GLB.bones).forEach(b=>{if(/(Shoulder|Arm|ForeArm|Hand)/.test(b.name))GLB.base.set(b,b.quaternion.clone())})}
   GLB.root=root;archer.children.forEach(c=>{if(c!==rig)c.visible=false});archer.add(root);
   const rim=new THREE.DirectionalLight(0x9fc8ff,1.4);rim.position.set(-3,3,-4);rim.target=root;archer.add(rim);
   window.__GLB=GLB;GLB.ready=true}).catch(e=>console.warn('GLB not loaded, placeholder kept',e));
@@ -636,7 +647,7 @@ function frame(p){
  const ang=TH*ss(.2,.33,p);rig.rotation.z=ang;
  if(Math.abs(d-lastD)>1e-4){buildBow(d);lastD=d}
  rig.updateWorldMatrix(true,false);
- if(GLB.ready)GLB.update();
+ if(GLB.ready)GLB.update(p);
  C0.copy(C0b);
  const t=tmap(p);
  let aPos=tmp,dirA;
